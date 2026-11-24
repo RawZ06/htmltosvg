@@ -1,0 +1,13 @@
+:root { color-scheme: light dark; --accent: #5B5BD6; }
+body { font: 13px/1.4 system-ui, sans-serif; margin: 0; padding: 12px; width: 220px; }
+h1 { font-size: 13px; margin: 0 0 10px; }
+button {
+  display: block; width: 100%; margin-bottom: 6px; padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; cursor: progress; }
+.opt { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+#status { margin: 8px 0 0; min-height: 1.4em; opacity: .8; }
+#status.error { color: #d33; opacity: 1; }

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "HTML to Design",
+  "version": "0.1.0",
+  "description": "Exporte le rendu actuel d'une page en SVG calqué, importable dans Figma, Sketch, Penpot, Illustrator, Inkscape…",
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "action": {
+    "default_title": "Exporter la page en SVG",
+    "default_popup": "popup/popup.html",
+    "default_icon": "icons/icon.svg"
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "html-to-design@local",
+      "strict_min_version": "128.0"
+    }
+  }
+}

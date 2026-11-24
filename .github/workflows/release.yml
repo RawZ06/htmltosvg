@@ -1,0 +1,68 @@
+name: Release
+
+# Pousser un tag vX.Y.Z crée une release GitHub avec le zip de l'extension.
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version depuis le tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(jq -r .version extension/manifest.json)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # le manifest prend la version du tag
+          jq --arg v "$VERSION" '.version = $v' extension/manifest.json > manifest.tmp
+          mv manifest.tmp extension/manifest.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Lint
+        run: npx --yes web-ext@8 lint --source-dir extension
+
+      - name: Build du zip
+        run: |
+          mkdir -p dist
+          cd extension
+          zip -r -X "../dist/htmltosvg-${{ steps.version.outputs.version }}.zip" . -x '.*'
+
+      - name: Signature Mozilla (optionnelle)
+        # Ne tourne que si les secrets AMO_JWT_ISSUER / AMO_JWT_SECRET existent.
+        # Produit un .xpi signé « unlisted », installable de façon permanente dans Firefox.
+        if: ${{ env.AMO_JWT_ISSUER != '' && github.ref_type == 'tag' }}
+        run: |
+          npx --yes web-ext@8 sign --source-dir extension --channel unlisted \
+            --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET" \
+            --artifacts-dir web-ext-artifacts
+          cp web-ext-artifacts/*.xpi "dist/htmltosvg-${{ steps.version.outputs.version }}.xpi"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: htmltosvg-${{ steps.version.outputs.version }}
+          path: dist/*
+
+      - name: Release GitHub
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

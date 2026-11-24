@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Harness HTML → SVG</title>
+<style>
+  body { margin: 0; font: 13px system-ui; display: grid; grid-template-columns: 1fr 1fr; height: 100vh; }
+  iframe, #out { width: 100%; height: 100%; border: 0; overflow: auto; }
+  #out { border-left: 2px solid #f0f; background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0/16px 16px; }
+  #bar { position: fixed; bottom: 8px; right: 8px; background: #000c; color: #fff; padding: 6px 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
+  <!-- Gauche : la page d'origine. Droite : le SVG généré, rendu comme image. -->
+  <iframe id="src" src="sample.html"></iframe>
+  <div id="out"></div>
+  <div id="bar">…</div>
+<script>
+const frame = document.getElementById('src');
+frame.onload = async () => {
+  const win = frame.contentWindow, doc = frame.contentDocument;
+  const s = doc.createElement('script');
+  s.src = '../extension/capture.js?' + Date.now();
+  s.onload = async () => {
+    await new Promise(r => setTimeout(r, 500)); // laisse charger les images
+    const res = await win.__htmlToDesign.capture({ mode: 'full' });
+    let svg = res.svg;
+    res.images.forEach((u, i) => { svg = svg.split(`__H2D_IMG_${i}__`).join(u.replace(/&/g, '&amp;')); });
+    window.__lastSvg = svg;
+    const parsed = new DOMParser().parseFromString(svg, 'image/svg+xml');
+    const err = parsed.querySelector('parsererror');
+    document.getElementById('bar').textContent = err
+      ? 'XML invalide : ' + err.textContent.slice(0, 200)
+      : `${res.stats.nodes} groupes, ${res.stats.texts} textes, ${res.stats.images} images, ${(svg.length / 1024).toFixed(1)} Ko`;
+    document.getElementById('out').innerHTML = svg.replace(/^<\?xml[^>]*>/, '');
+  };
+  doc.head.appendChild(s);
+};
+</script>
+</body>
+</html>
